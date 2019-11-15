@@ -1,25 +1,33 @@
 package com.gathergood.calum.ardemo
 
+import android.app.PendingIntent.getActivity
 import android.graphics.Point
 import android.net.Uri
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.view.View
+import android.widget.TextView
 import android.widget.Toast
 import com.google.ar.core.Anchor
 import com.google.ar.core.HitResult
 import com.google.ar.core.Plane
 import com.google.ar.core.TrackingState
 import com.google.ar.sceneform.AnchorNode
+import com.google.ar.sceneform.Node
 import com.google.ar.sceneform.assets.RenderableSource
 import com.google.ar.sceneform.rendering.ModelRenderable
+import com.google.ar.sceneform.rendering.ViewRenderable
 import com.google.ar.sceneform.ux.ArFragment
 import com.google.ar.sceneform.ux.TransformableNode
 import kotlinx.android.synthetic.main.activity_main.*
+import com.google.ar.sceneform.math.Vector3
+
+
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var arFragment: ArFragment
+    private var infoCard: Node? = null
 
     private var isTracking: Boolean = false
     private var isHitting: Boolean = false
@@ -27,6 +35,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        val modelurl = intent.getStringExtra("model_url")
+
+
 
         arFragment = sceneform_fragment as ArFragment
 
@@ -39,7 +51,7 @@ class MainActivity : AppCompatActivity() {
 
         // Set the onclick lister for our button
         // Change this string to point to the .sfb file of your choice :)
-        floatingActionButton.setOnClickListener { addObject(Uri.parse("https://poly.googleusercontent.com/downloads/0BnDT3T1wTE/85QOHCZOvov/Mesh_Beagle.gltf")) }
+        floatingActionButton.setOnClickListener { addObject(Uri.parse(modelurl)) }
         showFab(false)
 
     }
@@ -135,8 +147,10 @@ class MainActivity : AppCompatActivity() {
                 .setSource(fragment.context, RenderableSource.builder().setSource(
                         fragment.context,
                         model,
-                        RenderableSource.SourceType.GLTF2).build())
+                        RenderableSource.SourceType.GLTF2)
+                        .build())
                 .setRegistryId(model)
+
                 .build()
                 .thenAccept {
                     addNodeToScene(fragment, anchor, it)
@@ -158,11 +172,34 @@ class MainActivity : AppCompatActivity() {
      * Once the nodes are connected we select the TransformableNode so it is available for interactions
      */
     private fun addNodeToScene(fragment: ArFragment, anchor: Anchor, renderable: ModelRenderable) {
+
         val anchorNode = AnchorNode(anchor)
+
+
         // TransformableNode means the user to move, scale and rotate the model
         val transformableNode = TransformableNode(fragment.transformationSystem)
         transformableNode.renderable = renderable
         transformableNode.setParent(anchorNode)
+
+        val infoCard = Node()
+        infoCard.setParent(transformableNode)
+        infoCard.setEnabled(false)
+        infoCard.setLocalPosition(Vector3(0f, 0f, 0f))
+        ViewRenderable.builder()
+                .setView(this, R.layout.test_view)
+                .build()
+                .thenAccept{ renderable ->
+                    infoCard.setRenderable(renderable)
+                    val textView = renderable.getView() as TextView
+                    textView.setText("Cranial Trauma")
+                }
+                .exceptionally { throwable -> throw AssertionError("Could not load plane card view.", throwable) }
+        transformableNode.setOnTapListener { hitTestResult, motionEvent ->
+            Toast.makeText(this, "Model Tapped",
+                    Toast.LENGTH_LONG).show()
+            infoCard.setEnabled(!infoCard.isEnabled())
+
+        }
         fragment.arSceneView.scene.addChild(anchorNode)
         transformableNode.select()
     }
