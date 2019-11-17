@@ -40,6 +40,8 @@ dependencies {
 
 apply plugin: 'com.google.ar.sceneform.plugin'
 
+
+
 sceneform.asset('sampledata/NOVELO_EARTH_obj_1I5ip-3VOfv_3LMrB56MuSq/NOVELO_EARTH.obj',
         'default',
         'sampledata/NOVELO_EARTH_obj_1I5ip-3VOfv_3LMrB56MuSq/NOVELO_EARTH.sfa',
